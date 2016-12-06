@@ -24,7 +24,7 @@ finally:
  		driver.quit()
 
 
-def is_another_page(dr):
+def is_another_page_before(dr):
 	
 	prev_link_class_name = dr.find_element_by_class_name("nav_description").find_element_by_id("page_competition_1_block_competition_matches_7_previous").get_attribute("class")
 	next_link_class_name = dr.find_element_by_class_name("nav_description").find_element_by_id("page_competition_1_block_competition_matches_7_next").get_attribute("class")
@@ -38,11 +38,27 @@ def is_another_page(dr):
 
 	return not is_last_page
 
+def is_another_page_after(dr):
+	
+	next_link_class_name = dr.find_element_by_class_name("nav_description").find_element_by_id("page_competition_1_block_competition_matches_7_next").get_attribute("class")
+
+	if re.search(r"\s*next\s*$", next_link_class_name):
+		is_last_page  = False
+	elif re.search(r"\s*next\s+disabled\s*$", next_link_class_name):
+		is_last_page = True
+	else:
+		print("note: unusual next link",next_link_class_name)
+
+	return not is_last_page
+
 def scrape_results_table(s):
 	# first, go to the match table
 	match_table = s.find("table", {"class": "matches"})
+	
+	all_rows = match_table.findAll("tr", {"class": True, "data-timestamp": True, "id": True, "data-competition": True})
 	# look for table rows
-	for table_row in match_table.findAll("tr", {"class": True, "data-timestamp": True, "id": True, "data-competition": True}):
+
+	for table_row in all_rows:
 		# and then start going through every table cell in this row
 		week_day = table_row.find("td", {"class": "day no-repetition"}).text.strip()
 		list_days.append(week_day)
@@ -76,6 +92,13 @@ def scrape_results_table(s):
 			list_home_team_scores.append(None)
 			list_away_team_scores.append(None)
 
+		# try:
+		# 	element_to_click = WebDriverWait(driver, 10).until(EC.element_to_be_clickable(sc))
+		# print("now clicking..")
+		# driver.execute_script("arguments[0].click()", element_to_click)
+
+
+
 	return zip(list_days, list_dates, list_home_teams, list_home_team_scores, list_away_teams, list_away_team_scores)
 
 # try:
@@ -92,9 +115,8 @@ def scrape_results_table(s):
 #element_to_click = driver.find_element_by_id("page_competition_1_block_competition_matches_7_previous")
 clicks_to_first_page = 0
 
-while is_another_page(driver):
+while is_another_page_before(driver):
 	clicks_to_first_page += 1
-	print("click is",clicks_to_first_page)
 	driver.execute_script("arguments[0].click()", element_to_click)
 	time.sleep(10)
 
@@ -116,7 +138,7 @@ pp1 = scrape_results_table(s)
 
 # element = driver.find_element_by_id("page_competition_1_block_competition_matches_7_previous")
 # print("found elelent:",element.get_attribute('id'),"and",element.get_attribute('text'))
-# print("is there another page to see?",is_another_page(driver))
+# print("is there another page to see?",is_another_page_before(driver))
 # #rint("OLD PAGE:", driver.page_source)
 # print("now clicking..")
 # element.click()
@@ -157,7 +179,7 @@ for zi in pp1:
 	
 		# print(list_away_teams)
 # 		# is there another page to scrape
-# 	if is_another_page(driver):
+# 	if is_another_page_before(driver):
 		
 # 		print("doing click...")
 # 		what_to_click = driver.find_element_by_id("page_competition_1_block_competition_matches_7_previous")
