@@ -3,19 +3,26 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 import time
 import re
 
 start_page_url = "http://au.soccerway.com/national/australia/a-league/20162017/regular-season/r35455/matches/"
-
 driver = webdriver.Chrome('/Users/ik/Codes/soccerway-scraping/chromedriver')
-driver.set_window_size(1124, 850)
 driver.get(start_page_url)
-time.sleep(3)
+#driver.implicitly_wait(20)
+# wait up to 10 seconds before throwing a TimeoutException (if there's still no "Previous" link)
+try:
+    element_to_click = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.ID, "page_competition_1_block_competition_matches_7_previous"))
+    )
+# A finally clause is always executed before leaving the try statement, whether an exception has occurred or not
+finally:
+ 	if not element_to_click:
+ 		print("waited but that element didn't show anyway..")
+ 		driver.quit()
 
-# check if the driver title contains the word Australia (if it does, it's an indication that we're grabbing the right page)
-assert "Australia" in driver.title 
 
 def is_another_page(dr):
 	
@@ -79,6 +86,23 @@ def scrape_results_table(s):
 
 # the starting page is assumed to be a valid page with the results table and all
 
+#
+# click "Previous" until end up on the very first page
+#
+#element_to_click = driver.find_element_by_id("page_competition_1_block_competition_matches_7_previous")
+clicks_to_first_page = 0
+
+while is_another_page(driver):
+	clicks_to_first_page += 1
+	print("click is",clicks_to_first_page)
+	driver.execute_script("arguments[0].click()", element_to_click)
+	time.sleep(10)
+
+print("got to the very first page; had to click 'Previous' {} times...".format(clicks_to_first_page))
+
+
+
+# create a soup object
 s = BeautifulSoup(driver.page_source, "lxml")
 
 list_days = []
@@ -90,26 +114,26 @@ list_away_team_scores = []
 
 pp1 = scrape_results_table(s)
 
-element = driver.find_element_by_id("page_competition_1_block_competition_matches_7_previous")
-print("found elelent:",element.get_attribute('id'),"and",element.get_attribute('text'))
-print("is there another page to see?",is_another_page(driver))
-#rint("OLD PAGE:", driver.page_source)
-print("now clicking..")
-element.click()
-time.sleep(10)
-driver.execute_script("arguments[0].click()", element)
-#element.click()
-#selenium.FireEvent(element, 'click')
-print("clicked. wait 30 seconds..")
-time.sleep(30)
+# element = driver.find_element_by_id("page_competition_1_block_competition_matches_7_previous")
+# print("found elelent:",element.get_attribute('id'),"and",element.get_attribute('text'))
+# print("is there another page to see?",is_another_page(driver))
+# #rint("OLD PAGE:", driver.page_source)
+# print("now clicking..")
+# element.click()
+# time.sleep(10)
+# driver.execute_script("arguments[0].click()", element)
+# #element.click()
+# #selenium.FireEvent(element, 'click')
+# print("clicked. wait 30 seconds..")
+# time.sleep(30)
 #print("NEW PAGE:", driver.page_source)
 #print("current URL:",driver.current_url)
 #s1 = BeautifulSoup(driver.page_source, "lxml")
 #pp2 = scrape_results_table(s1)
 
-#print("page1:",pp1)
-# for zi in pp1:
-#  	print(zi)
+print("page1:",pp1)
+for zi in pp1:
+ 	print(zi)
 # print("page2:",pp2)
 # for zi in pp2:
 #  	print(zi)
@@ -152,6 +176,9 @@ Finally, the browser window is closed. You can also call quit method instead of 
 The quit will exit entire browser whereas close` will close one tab, but if just one tab was open, 
 by default most browser will exit entirely
 """
+# check if the driver title contains the word Australia (if it does, it's an indication that we're grabbing the right page)
+#assert "Australia" in driver.title 
+#print("title:",driver.title)
 
 driver.close()
 
